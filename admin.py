@@ -4,7 +4,7 @@ from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, get_permission_codename
 from copy import deepcopy, copy
 from django.db.models.base import ModelBase
 from django.core.exceptions import ImproperlyConfigured
@@ -13,14 +13,25 @@ from django.utils.translation import ugettext_lazy, ugettext as _
 from django.forms.utils import ErrorList
 from django import forms
 from smooth_perms.managers import PermissionNotFoundException
-from smooth_perms.models import SmoothGroup, SmoothUser
+from smooth_perms.models import SmoothGroup
 
+user_app_name, user_model_name = settings.AUTH_USER_MODEL.rsplit('.', 1)
+User = None
+try:
+    User = apps.get_registered_model(user_app_name, user_model_name)
+except KeyError:
+    pass
+if User is None:
+    raise ImproperlyConfigured(
+        "You have defined a custom user model %s, but the app %s is not "
+        "in settings.INSTALLED_APPS" % (settings.AUTH_USER_MODEL, user_app_name)
+    )
 
 class SmoothPermRegister(object):
     registry = []
 
     def get_codename(self, model, perm):
-        return getattr(model._meta, 'get_{}_permission' .format(perm))()
+        return get_permission_codename(perm, model._meta)
 
     def get_fields_form(self, fields=None):
         """
@@ -33,7 +44,7 @@ class SmoothPermRegister(object):
         for model, text in self.registry:
             for t in ('add', 'change', 'delete'):
                 # add permission `t` to model `model`
-                fields['can_{}' . format(self.get_codename(model, t))] = forms.BooleanField(label=_(t.title()), required=False)
+                fields['can_{}' . format(get_permission_codename(model, t))] = forms.BooleanField(label=_(t.title()), required=False)
         return fields
 
     def get_initials(self, obj):
@@ -109,8 +120,9 @@ class SmoothPermRegister(object):
                 fieldsets.insert(2 + i, (title, {'fields': (fields,)}))
         return fieldsets
 
+
 smooth_registry = SmoothPermRegister()
-smooth_registry.register(SmoothUser)
+smooth_registry.register(User)
 smooth_registry.register(SmoothGroup)
 
 
