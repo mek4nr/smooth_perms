@@ -12,12 +12,6 @@ class SmoothGroup(Group):
         verbose_name_plural = _(u'User groups (SmoothPerm)')
 
 
-class SmoothUser(User):
-    class Meta:
-        verbose_name = _(u'User (SmoothPerm)')
-        verbose_name_plural = _(u'Users (SmoothPerm)')
-
-
 class ModelPermission(models.Model):
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='owned_%(class)ss', verbose_name=_("owner"), blank=True, null=True)

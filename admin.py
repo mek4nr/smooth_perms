@@ -2,19 +2,20 @@ from django.contrib import admin
 from django.apps import apps
 from django.contrib.admin.options import InlineModelAdmin, BaseModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
-from django.contrib.auth import get_user_model, get_permission_codename
-from copy import deepcopy, copy
+from django.contrib.auth import get_permission_codename
+from copy import deepcopy
 from django.db.models.base import ModelBase
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
-from django.utils.translation import ugettext_lazy, ugettext as _
+from django.utils.translation import ugettext as _
 from django.forms.utils import ErrorList
 from django import forms
 from smooth_perms.managers import PermissionNotFoundException
 from smooth_perms.models import SmoothGroup
+
 
 user_app_name, user_model_name = settings.AUTH_USER_MODEL.rsplit('.', 1)
 User = None
@@ -27,6 +28,7 @@ if User is None:
         "You have defined a custom user model %s, but the app %s is not "
         "in settings.INSTALLED_APPS" % (settings.AUTH_USER_MODEL, user_app_name)
     )
+
 
 class SmoothPermRegister(object):
     registry = []
