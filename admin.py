@@ -13,6 +13,7 @@ from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django.forms.utils import ErrorList
 from django import forms
+from smooth_perms.utils.permissions import get_current_user
 from smooth_perms.managers import PermissionNotFoundException
 from smooth_perms.models import SmoothGroup
 import logging
@@ -152,6 +153,9 @@ class SmoothGroupForm(forms.ModelForm):
 
     def save(self, commit=True):
         group = super(SmoothGroupForm, self).save(commit=False)
+        created = not bool(group.pk)
+        if created:
+            group.created_by = get_current_user()
         smooth_registry.save_permissions(self.cleaned_data, group)
         return group
 
@@ -168,6 +172,9 @@ class SmoothGroupAdmin(admin.ModelAdmin):
         super(SmoothGroupAdmin, self).__init__(*args, **kwargs)
 
     def get_fieldsets(self, request, obj=None):
+        # The function is called one time before form is created
+        # So we add a token in request in first call, next
+        # we can call dynamic fields (form is created)
         if hasattr(request, "_gfs_marker"):
             return smooth_registry.update_permission_fieldsets(request, self.fieldsets)
         setattr(request, "_gfs_marker", 1)
