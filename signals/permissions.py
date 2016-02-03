@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 from smooth_perms.models import SmoothGroup
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 def post_save_user_group(instance, raw, created, **kwargs):
@@ -10,7 +7,6 @@ def post_save_user_group(instance, raw, created, **kwargs):
         requires: CurrentUserMiddleware
     """
 
-    LOG.debug("TEST")
     from smooth_perms.utils.permissions import get_current_user
     # read current user from thread locals
     creator = get_current_user()

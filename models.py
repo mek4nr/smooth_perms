@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.conf import settings
 from django.contrib.auth import get_permission_codename
 from smooth_perms.managers import GlobalPermissionManager
