@@ -128,7 +128,7 @@ class SmoothPermRegister(object):
 
 
 smooth_registry = SmoothPermRegister()
-#smooth_registry.register(User)
+smooth_registry.register(User)
 smooth_registry.register(SmoothGroup)
 
 
@@ -406,7 +406,6 @@ class SmoothPermAdmin(admin.ModelAdmin):
         inlines = set(self.inlines) or set()
         allow_inline = set()
         deny_inline = set()
-
         if obj is not None:
 
             for perm in self.smooth_perm_field:
@@ -468,7 +467,74 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
 
     smooth_perm_field = {}
     exclude_from_parent = ()
-    fieldsets_from_parent = []
+    fields_from_parent = []
+
+    def __init__(self, *args, **kwargs):
+        if self.exclude is not None:
+            self.exclude_from_parent = tuple(self.exclude)
+
+        if self.fields is not None:
+            self.fields_from_parent = list(self.fields)
+
+        super(SmoothPermInlineModelAdmin, self).__init__(*args, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        self.exclude = deepcopy(self.exclude_from_parent)
+
+        self.get_readonly_fields(request, obj)
+        return super(SmoothPermInlineModelAdmin, self).get_formset(request, obj, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Override readonly_fields. If user can only view page, all fields are readonly,
+        if user hasn't advanced_settings perm, all :param:smooth_perm_field are readonly
+        if user has all perms / superuser all readonly are readonly from modelAdmin
+        """
+        allow_fields = set()
+        readonly_fields = set()
+        exclude_fields = set()
+
+        readonly_init = set(self.readonly_fields) or set()
+        exclude_init = set(self.exclude_from_parent)
+
+        if obj is not None:
+            if not obj.has_change_permission(request) and obj.has_view_permission(request):
+                return self.get_fields(request, obj)
+            else:
+                for perm in self.smooth_perm_field:
+                    value = self.smooth_perm_field[perm]
+
+                    if self.FIELD not in value:
+                        continue
+
+                    for field in value[self.FIELD]:
+                        if isinstance(field, (list, tuple)):
+                            tmp = list(field)
+                            field = tmp[0]
+                            is_exclude = tmp[1]
+                        else:
+                            is_exclude = False
+
+                        try:
+                            if obj.has_smooth_permission(request, perm):
+                                allow_fields.add(field)
+                            elif is_exclude is True:
+                                exclude_fields.add(field)
+                            else:
+                                readonly_fields.add(field)
+                        except Exception:
+                            raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
+
+                if obj.permissions.smooth_level_perm is not obj.permissions.HIGH_LEVEL:
+                    allow_fields = allow_fields - readonly_fields - exclude_fields
+
+            readonly_fields -= exclude_fields - allow_fields
+            exclude_fields -= allow_fields
+
+            self.exclude = list(exclude_init.union(exclude_fields))
+            self.exclude.append('owner')
+
+        return list(readonly_init.union(readonly_fields))
 
 
 class SmoothPermStackedInline(SmoothPermInlineModelAdmin):

@@ -14,6 +14,7 @@ class SmoothGroup(Group):
         verbose_name_plural = _(u'User groups (SmoothPerm)')
         app_label = 'smooth_perms'
 
+
 class ModelPermission(models.Model):
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='owned_%(class)ss', verbose_name=_("owner"), blank=True, null=True)
