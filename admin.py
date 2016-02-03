@@ -13,9 +13,12 @@ from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django.forms.utils import ErrorList
 from django import forms
+from smooth_perms.utils.permissions import get_current_user
 from smooth_perms.managers import PermissionNotFoundException
 from smooth_perms.models import SmoothGroup
+import logging
 
+LOG = logging.getLogger("LOG")
 
 user_app_name, user_model_name = settings.AUTH_USER_MODEL.rsplit('.', 1)
 User = None
@@ -47,7 +50,7 @@ class SmoothPermRegister(object):
         for model, text in self.registry:
             for t in ('add', 'change', 'delete'):
                 # add permission `t` to model `model`
-                fields['can_{}' . format(get_permission_codename(model, t))] = forms.BooleanField(label=_(t.title()), required=False)
+                fields['can_{}' . format(self.get_codename(model, t))] = forms.BooleanField(label=_(t.title()), required=False)
         return fields
 
     def get_initials(self, obj):
@@ -125,7 +128,7 @@ class SmoothPermRegister(object):
 
 
 smooth_registry = SmoothPermRegister()
-smooth_registry.register(User)
+#smooth_registry.register(User)
 smooth_registry.register(SmoothGroup)
 
 
@@ -134,18 +137,6 @@ class SmoothGroupForm(forms.ModelForm):
     Generic form for User & Group permissions in cms
     """
 
-    can_add_smoothgroup = forms.BooleanField(label=_('Add'), required=False)
-    can_change_smoothgroup = forms.BooleanField(label=_('Change'), required=False)
-    can_delete_smoothgroup = forms.BooleanField(label=_('Delete'), required=False)
-
-    can_add_smoothuser = forms.BooleanField(label=_('Add'), required=False)
-    can_change_smoothuser = forms.BooleanField(label=_('Change'), required=False)
-    can_delete_smoothuser = forms.BooleanField(label=_('Delete'), required=False)
-
-    class Meta:
-        fields = ['name']
-        model = SmoothGroup
-
     def __init__(self, data=None, files=None, auto_id='id_{}', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
@@ -153,15 +144,18 @@ class SmoothGroupForm(forms.ModelForm):
         if instance:
             initial = initial or {}
             initial.update(self.populate_initials(instance))
-
         super(SmoothGroupForm, self).__init__(data, files, auto_id, prefix,
                                               initial, error_class, label_suffix, empty_permitted, instance)
+        self.fields.update(smooth_registry.get_fields_form())
 
     def populate_initials(self, obj):
         return smooth_registry.get_initials(obj)
 
     def save(self, commit=True):
         group = super(SmoothGroupForm, self).save(commit=False)
+        created = not bool(group.pk)
+        if created:
+            group.created_by = get_current_user()
         smooth_registry.save_permissions(self.cleaned_data, group)
         return group
 
@@ -171,10 +165,20 @@ class SmoothGroupAdmin(admin.ModelAdmin):
         (None, {'fields': ('name',)}),
     ]
 
+    model = SmoothGroup
     form = SmoothGroupForm
 
+    def __init__(self, *args, **kwargs):
+        super(SmoothGroupAdmin, self).__init__(*args, **kwargs)
+
     def get_fieldsets(self, request, obj=None):
-        return smooth_registry.update_permission_fieldsets(request, self.fieldsets)
+        # The function is called one time before form is created
+        # So we add a token in request in first call, next
+        # we can call dynamic fields (form is created)
+        if hasattr(request, "_gfs_marker"):
+            return smooth_registry.update_permission_fieldsets(request, self.fieldsets)
+        setattr(request, "_gfs_marker", 1)
+        return super(SmoothGroupAdmin, self).get_fieldsets(request, obj)
 
     def save_model(self, request, obj, form, change):
         """
