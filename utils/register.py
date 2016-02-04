@@ -7,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django import forms
+from smooth_perms.models import SmoothRegistryModel
 
 
 class SmoothPermRegister(object):
@@ -73,12 +74,14 @@ class SmoothPermRegister(object):
         if text is None:
             text = _(u'{} permissions') .format(model.__name__)
 
+        SmoothRegistryModel.objects.get_or_create(name=model.__name__)
         self.registry.append((model, _(text)))
 
     def unregister(self, model):
         for i, perm_model in enumerate(self.registry):
             m, t = perm_model
             if model == m:
+                SmoothRegistryModel.objects.get(name=model.__name__).delete()
                 self.registry.remove(i)
                 return True
         raise NotRegistered('The model {} is not registered' . format(model.__name__))

@@ -2,7 +2,17 @@ from django.contrib import admin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.admin.options import InlineModelAdmin
 from copy import deepcopy
-from smooth_perms.models import PermissionNotFoundException
+from smooth_perms.models import PermissionNotFoundException, SmoothRegistryModel
+from django.utils.translation import ugettext_lazy as _
+from ast import literal_eval
+import logging
+
+LOG = logging.getLogger("LOG")
+
+
+def get_registry_perms(obj):
+        return SmoothRegistryModel.objects.get(name=obj.model.__name__).registry.all()
+
 
 
 class SmoothPermAdmin(admin.ModelAdmin):
@@ -21,7 +31,9 @@ class SmoothPermAdmin(admin.ModelAdmin):
     exclude_from_parent = ()
     fieldsets_from_parent = []
 
-    inline_perm_model = NotImplementedError
+    @property
+    def inline_perm_model(self):
+        raise NotImplementedError(_("inline_perm_model need to be initialized"))
 
     def __init__(self, *arg, **kwargs):
         if self.exclude is not None:
@@ -125,13 +137,10 @@ class SmoothPermAdmin(admin.ModelAdmin):
                         [field.name for field in self.opts.local_many_to_many]
                     ))
             else:
-                for perm in self.smooth_perm_field:
-                    value = self.smooth_perm_field[perm]
-
-                    if self.FIELD not in value:
-                        continue
-
-                    for field in value[self.FIELD]:
+                permission_registry = get_registry_perms(self)
+                for permission in permission_registry:
+                    perm = permission.perm
+                    for field in literal_eval(permission.fields):
                         if isinstance(field, (list, tuple)):
                             tmp = list(field)
                             field = tmp[0]
@@ -230,10 +239,6 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
 
 class SmoothPermInlineModelAdmin(InlineModelAdmin):
-    INLINE = 0
-    FIELD = 1
-
-    smooth_perm_field = {}
     exclude_from_parent = ()
     fields_from_parent = []
 
@@ -269,13 +274,10 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
             if not obj.has_change_permission(request) and obj.has_view_permission(request):
                 return self.get_fields(request, obj)
             else:
-                for perm in self.smooth_perm_field:
-                    value = self.smooth_perm_field[perm]
-
-                    if self.FIELD not in value:
-                        continue
-
-                    for field in value[self.FIELD]:
+                permission_registry = get_registry_perms(self)
+                for permission in permission_registry:
+                    perm = permission.perm
+                    for field in literal_eval(permission.fields):
                         if isinstance(field, (list, tuple)):
                             tmp = list(field)
                             field = tmp[0]

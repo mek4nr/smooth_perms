@@ -1,6 +1,7 @@
 from .groups import *
 from .options import *
 from .permissions import *
+from .registry import *
 
 from django.conf import settings
 from django.apps import apps

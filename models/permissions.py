@@ -22,6 +22,10 @@ class ModelPermission(models.Model):
     smooth_perm_change_all = False
     smooth_perm_delete_all = False
 
+    @property
+    def permissions(self):
+        raise NotImplementedError
+
     def has_smooth_permission(self, request, permission_type):
         if hasattr(self, "has_{}_permission" . format(permission_type)):
             return getattr(self, "has_{}_permission" . format(permission_type))(request)

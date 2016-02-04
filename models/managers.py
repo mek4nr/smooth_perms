@@ -23,7 +23,9 @@ class GlobalPermissionManager(models.Manager):
     :param foreign_key : The foreign key from the permission model
     :type str.
     """
-    foreign_key = ""
+    @property
+    def foreign_key(self):
+        raise NotImplementedError
 
     @staticmethod
     def get_grant_all():
