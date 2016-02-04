@@ -22,7 +22,6 @@ class SmoothPermAdmin(admin.ModelAdmin):
     :param smooth_perm_field: all field considered like advanced_settings on the model,
     they will be read_only if user has not permission
     """
-
     INLINE = 0
     FIELD = 1
 
@@ -140,14 +139,14 @@ class SmoothPermAdmin(admin.ModelAdmin):
                 permission_registry = get_registry_perms(self)
                 for permission in permission_registry:
                     perm = permission.perm
-                    for field in literal_eval(permission.fields):
-                        if isinstance(field, (list, tuple)):
-                            tmp = list(field)
+                    for _field in literal_eval(permission.fields):
+                        if isinstance(_field, (list, tuple)):
+                            tmp = list(_field)
                             field = tmp[0]
-                            is_exclude = tmp[1]
+                            is_exclude = bool(tmp[1])
                         else:
                             is_exclude = False
-
+                            field = _field
                         try:
                             if obj.has_smooth_permission(request, perm):
                                 allow_fields.add(field)
@@ -165,11 +164,16 @@ class SmoothPermAdmin(admin.ModelAdmin):
             exclude_fields -= allow_fields
 
             self.exclude = list(exclude_init.union(exclude_fields))
-            if len(self.exclude) > 0:
-                self.fieldsets = self.remove_exclude_from_fieldsets(self.exclude, self.fieldsets_from_parent)
-            else:
-                self.fieldsets = list(self.fieldsets_from_parent)
             self.exclude.append('owner')
+
+            if not self.fieldsets:
+                if len(self.exclude) > 0:
+                    self.fields = list(set(self.fields) - exclude_fields)
+            else:
+                if len(self.exclude) > 0:
+                    self.fieldsets = self.remove_exclude_from_fieldsets(self.exclude, self.fieldsets_from_parent)
+                else:
+                    self.fieldsets = list(self.fieldsets_from_parent)
 
         return list(readonly_init.union(readonly_fields))
 

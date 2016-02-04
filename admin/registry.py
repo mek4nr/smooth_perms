@@ -19,6 +19,3 @@ class SmoothRegistryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
-
-
-
