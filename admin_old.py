@@ -14,7 +14,7 @@ from django.utils.translation import ugettext as _
 from django.forms.utils import ErrorList
 from django import forms
 from smooth_perms.utils.permissions import get_current_user
-from smooth_perms.managers import PermissionNotFoundException
+from smooth_perms.models import PermissionNotFoundException
 from smooth_perms.models import SmoothGroup
 import logging
 
@@ -95,7 +95,7 @@ class SmoothPermRegister(object):
                 raise AlreadyRegistered('The model {} is already registered' . format(model.__name__))
 
         if text is None:
-            text = u'{} permissions' .format(model.__name__)
+            text = _(u'{} permissions') .format(model.__name__)
 
         self.registry.append((model, _(text)))
 
@@ -189,7 +189,7 @@ class SmoothGroupAdmin(admin.ModelAdmin):
         obj.save()
 
 
-class SmoothPermInlineTabularAdmin(admin.TabularInline):
+class SmoothPermInlineAdmin(InlineModelAdmin):
     """
     Class form inline permission
     """
@@ -229,8 +229,16 @@ class SmoothPermInlineTabularAdmin(admin.TabularInline):
 
             self.can_delete = obj.has_delete_permissions_permission(request)
 
-        formset_cls = super(SmoothPermInlineTabularAdmin, self).get_formset(request, obj=None, exclude=exclude, **kwargs)
+        formset_cls = super(SmoothPermInlineAdmin, self).get_formset(request, obj=None, exclude=exclude, **kwargs)
         return formset_cls
+
+
+class SmoothPermInlineTabularAdmin(SmoothPermInlineAdmin):
+    template = 'admin/edit_inline/tabular.html'
+
+
+class SmoothPermInlineStackedAdmin(SmoothPermInlineAdmin):
+    template = 'admin/edit_inline/stacked.html'
 
 
 class SmoothPermBaseModelAdmin(BaseModelAdmin):
