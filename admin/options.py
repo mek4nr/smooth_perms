@@ -21,7 +21,7 @@ def process_fields(request, model, obj):
         perm = permission.perm
         try:
             have_perm = obj.has_smooth_permission(request, perm)
-        except Exception:
+        except Exception as e:
             raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
 
         for field in literal_eval(permission.fields):
@@ -35,7 +35,8 @@ def process_fields(request, model, obj):
             else:
                 exclude_fields.add(field)
 
-        return allow_fields, readonly_fields, exclude_fields
+    LOG.debug(exclude_fields)
+    return allow_fields, readonly_fields, exclude_fields
 
 
 class SmoothPermAdmin(admin.ModelAdmin):
@@ -45,13 +46,9 @@ class SmoothPermAdmin(admin.ModelAdmin):
     :param smooth_perm_field: all field considered like advanced_settings on the model,
     they will be read_only if user has not permission
     """
-    INLINE = 0
-    FIELD = 1
-
-    smooth_perm_field = {}
-
     exclude_from_parent = ()
     fieldsets_from_parent = []
+    fields_from_parent = []
 
     @property
     def inline_perm_model(self):
@@ -63,6 +60,9 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
         if self.fieldsets is not None:
             self.fieldsets_from_parent = list(self.fieldsets)
+
+        if self.fields is not None:
+            self.fields_from_parent = list(self.fields)
 
         super(SmoothPermAdmin, self).__init__(*arg, **kwargs)
 
@@ -142,10 +142,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
         if user hasn't advanced_settings perm, all :param:smooth_perm_field are readonly
         if user has all perms / superuser all readonly are readonly from modelAdmin
         """
-        allow_fields = set()
-        readonly_fields = set()
-        exclude_fields = set()
 
+        readonly_fields = set()
         readonly_init = set(self.readonly_fields) or set()
         exclude_init = set(self.exclude_from_parent)
 
@@ -189,31 +187,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
         :return: [inlines] list of inlines models
         """
         inlines = set(self.inlines) or set()
-        allow_inline = set()
-        deny_inline = set()
         if obj is not None:
-
-            for perm in self.smooth_perm_field:
-                value = self.smooth_perm_field[perm]
-
-                if self.INLINE not in value:
-                    continue
-
-                for inline in value[self.INLINE]:
-                    try:
-                        if obj.has_smooth_permission(request, perm):
-                            allow_inline.add(inline)
-                        else:
-                            deny_inline.add(inline)
-                    except Exception:
-                            raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
-
-            if self.model.permissions.smooth_level_perm is not self.model.permissions.HIGH_LEVEL:
-                allow_inline = allow_inline - deny_inline
-
-            inlines = (inlines - (deny_inline - allow_inline)).union(allow_inline)
             inlines.add(self.inline_perm_model)
-
             if not obj.has_change_permissions_permission(request):
                 inlines.remove(self.inline_perm_model)
 
@@ -237,12 +212,11 @@ class SmoothPermAdmin(admin.ModelAdmin):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-
+        self.fields = deepcopy(self.fields_from_parent)
         self.exclude = deepcopy(self.exclude_from_parent)
 
         self.get_readonly_fields(request, obj)
         self.get_fieldsets(request, obj)
-
         return super(SmoothPermAdmin, self).get_form(request, obj, **kwargs)
 
 

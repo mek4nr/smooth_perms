@@ -5,7 +5,7 @@ class SmoothPermInlineAdmin(InlineModelAdmin):
     """
     Class form inline permission
     """
-
+    fields = ['user', 'group', 'can_view', 'can_change', 'can_advanced_settings', 'can_delete', 'can_change_permissions', 'can_delete_permissions']
     extra = 0
 
     def has_change_permission(self, request, obj=None):

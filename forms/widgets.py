@@ -23,9 +23,7 @@ class SelectMultipleChosen(forms.SelectMultiple):
         js = ('admin/js/jquery.js', 'smooth_perms/js/chosen.jquery.min.js',)
 
     def render(self, name, value, attrs=None, choices=()):
-        if value is None:
-            value = []
-        elif not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple)):
             value = literal_eval(value)
         output = super(SelectMultipleChosen, self).render(name, value, attrs, choices)
         output += '<script type="text/javascript" >$("select[name={0}]").chosen({1})</script>' . format(name, '{}')
