@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.admin.options import InlineModelAdmin
 from copy import deepcopy
-from smooth_perms.models import PermissionNotFoundException, SmoothRegistryModel
+from smooth_perms.models import PermissionNotFoundException
+from smooth_perms.utils.register import get_registry_perms
 from django.utils.translation import ugettext_lazy as _
 from ast import literal_eval
 import logging
@@ -10,9 +11,31 @@ import logging
 LOG = logging.getLogger("LOG")
 
 
-def get_registry_perms(obj):
-        return SmoothRegistryModel.objects.get(name=obj.model.__name__).registry.all()
+def process_fields(request, model, obj):
+    allow_fields = set()
+    readonly_fields = set()
+    exclude_fields = set()
 
+    permission_registry = get_registry_perms(model)
+    for permission in permission_registry:
+        perm = permission.perm
+        try:
+            have_perm = obj.has_smooth_permission(request, perm)
+        except Exception:
+            raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
+
+        for field in literal_eval(permission.fields):
+            if have_perm:
+                allow_fields.add(field)
+            else:
+                readonly_fields.add(field)
+        for field in literal_eval(permission.exclude_fields):
+            if have_perm:
+                allow_fields.add(field)
+            else:
+                exclude_fields.add(field)
+
+        return allow_fields, readonly_fields, exclude_fields
 
 
 class SmoothPermAdmin(admin.ModelAdmin):
@@ -136,26 +159,7 @@ class SmoothPermAdmin(admin.ModelAdmin):
                         [field.name for field in self.opts.local_many_to_many]
                     ))
             else:
-                permission_registry = get_registry_perms(self)
-                for permission in permission_registry:
-                    perm = permission.perm
-                    for _field in literal_eval(permission.fields):
-                        if isinstance(_field, (list, tuple)):
-                            tmp = list(_field)
-                            field = tmp[0]
-                            is_exclude = bool(tmp[1])
-                        else:
-                            is_exclude = False
-                            field = _field
-                        try:
-                            if obj.has_smooth_permission(request, perm):
-                                allow_fields.add(field)
-                            elif is_exclude is True:
-                                exclude_fields.add(field)
-                            else:
-                                readonly_fields.add(field)
-                        except Exception:
-                            raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
+                allow_fields, readonly_fields, exclude_fields = process_fields(request, self.model, obj)
 
                 if self.model.permissions.smooth_level_perm is not self.model.permissions.HIGH_LEVEL:
                     allow_fields = allow_fields - readonly_fields - exclude_fields
@@ -278,26 +282,24 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
             if not obj.has_change_permission(request) and obj.has_view_permission(request):
                 return self.get_fields(request, obj)
             else:
-                permission_registry = get_registry_perms(self)
+                permission_registry = get_registry_perms(self.model)
                 for permission in permission_registry:
                     perm = permission.perm
-                    for field in literal_eval(permission.fields):
-                        if isinstance(field, (list, tuple)):
-                            tmp = list(field)
-                            field = tmp[0]
-                            is_exclude = tmp[1]
-                        else:
-                            is_exclude = False
+                    try:
+                        have_perm = obj.has_smooth_permission(request, perm)
+                    except Exception:
+                        raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
 
-                        try:
-                            if obj.has_smooth_permission(request, perm):
-                                allow_fields.add(field)
-                            elif is_exclude is True:
-                                exclude_fields.add(field)
-                            else:
-                                readonly_fields.add(field)
-                        except Exception:
-                            raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
+                    for field in literal_eval(permission.fields):
+                        if have_perm:
+                            allow_fields.add(field)
+                        else:
+                            readonly_fields.add(field)
+                    for field in literal_eval(permission.exclude_fields):
+                        if have_perm:
+                            allow_fields.add(field)
+                        else:
+                            exclude_fields.add(field)
 
                 if obj.permissions.smooth_level_perm is not obj.permissions.HIGH_LEVEL:
                     allow_fields = allow_fields - readonly_fields - exclude_fields

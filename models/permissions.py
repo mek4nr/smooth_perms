@@ -6,6 +6,16 @@ from django.contrib.auth import get_permission_codename
 from smooth_perms.models import GlobalPermissionManager
 
 
+BASE_PERMISSIONS = (
+    'view',
+    'change',
+    'advanced_settings',
+    'delete',
+    'change_permissions',
+    'delete_permissions',
+)
+
+
 class ModelPermission(models.Model):
 
     owner = models.ForeignKey(
@@ -138,14 +148,7 @@ class GlobalPermissionMixin(models.Model):
     smooth_level_perm = LOW_LEVEL
 
     def __init__(self, *args, **kwargs):
-        self.PERMISSIONS = self.PERMISSIONS + (
-            'change',
-            'delete',
-            'advanced_settings',
-            'change_permissions',
-            'delete_permissions',
-            'view',
-        )
+        self.PERMISSIONS = self.PERMISSIONS + BASE_PERMISSIONS
         super(GlobalPermissionMixin, self).__init__(*args, **kwargs)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("user"), blank=True, null=True)

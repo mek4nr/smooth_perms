@@ -7,7 +7,18 @@ from django.core.exceptions import ImproperlyConfigured
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django import forms
-from smooth_perms.models import SmoothRegistryModel
+from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin
+import logging
+
+LOG = logging.getLogger("LOG")
+
+
+def get_registry(model):
+    return SmoothRegistryModel.objects.get(content_type=ContentType.objects.get_for_model(model))
+
+
+def get_registry_perms(model):
+    return get_registry(model).registry.all()
 
 
 class SmoothPermRegister(object):
@@ -74,14 +85,28 @@ class SmoothPermRegister(object):
         if text is None:
             text = _(u'{} permissions') .format(model.__name__)
 
-        SmoothRegistryModel.objects.get_or_create(name=model.__name__)
+        try:
+            registry_model = SmoothRegistryModel.objects.get_or_create(
+                name="{} registry" . format(model.__name__),
+                content_type=ContentType.objects.get_for_model(model)
+            )
+
+            for perm in BASE_PERMISSIONS:
+                PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+            for perm in model.permissions.PERMISSIONS:
+                PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+        except Exception:
+            pass
+
         self.registry.append((model, _(text)))
 
     def unregister(self, model):
         for i, perm_model in enumerate(self.registry):
-            m, t = perm_model
-            if model == m:
-                SmoothRegistryModel.objects.get(name=model.__name__).delete()
+            _model, _text = perm_model
+            if model == _model:
+                SmoothRegistryModel.objects.get(
+                    content_type=ContentType.objects.get_for_model(model)
+                ).delete()
                 self.registry.remove(i)
                 return True
         raise NotRegistered('The model {} is not registered' . format(model.__name__))
