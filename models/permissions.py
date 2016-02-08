@@ -1,26 +1,40 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from django.conf import settings
 from django.contrib.auth import get_permission_codename
-from smooth_perms.managers import GlobalPermissionManager
+from smooth_perms.models import GlobalPermissionManager
 
 
-class SmoothGroup(Group):
-    class Meta:
-        verbose_name = _(u'User group (SmoothPerm)')
-        verbose_name_plural = _(u'User groups (SmoothPerm)')
+BASE_PERMISSIONS = (
+    'view',
+    'change',
+    'advanced_settings',
+    'delete',
+    'change_permissions',
+    'delete_permissions',
+)
 
 
 class ModelPermission(models.Model):
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='owned_%(class)ss', verbose_name=_("owner"), blank=True, null=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='owned_%(class)ss',
+        verbose_name=_("owner"),
+        blank=True,
+        null=True
+    )
 
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     modified_at = models.DateTimeField(_('modified at'), auto_now=True)
 
     smooth_perm_change_all = False
     smooth_perm_delete_all = False
+
+    @property
+    def permissions(self):
+        raise NotImplementedError
 
     def has_smooth_permission(self, request, permission_type):
         if hasattr(self, "has_{}_permission" . format(permission_type)):
@@ -134,14 +148,7 @@ class GlobalPermissionMixin(models.Model):
     smooth_level_perm = LOW_LEVEL
 
     def __init__(self, *args, **kwargs):
-        self.PERMISSIONS = self.PERMISSIONS + (
-            'change',
-            'delete',
-            'advanced_settings',
-            'change_permissions',
-            'delete_permissions',
-            'view',
-        )
+        self.PERMISSIONS = self.PERMISSIONS + BASE_PERMISSIONS
         super(GlobalPermissionMixin, self).__init__(*args, **kwargs)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("user"), blank=True, null=True)
