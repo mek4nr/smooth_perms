@@ -1,17 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+..module:admin.options
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: module for all definition for model using smooth_perms. Defintion for Inline and ModelAdmin,
+    created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+"""
 from django.contrib import admin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.admin.options import InlineModelAdmin
 from copy import deepcopy
 from smooth_perms.models import PermissionNotFoundException
-from smooth_perms.utils.register import get_registry_perms
+from smooth_perms.utils.registry import get_registry_perms
 from django.utils.translation import ugettext_lazy as _
 from ast import literal_eval
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 def process_fields(request, model, obj):
+    """
+    Function who loop on all permission and generate allow, exclude and readonly fields
+    :return: allow_fields, readonly_fields, exclude_fields
+    :rtype: set(), set(), set()
+    """
     allow_fields = set()
     readonly_fields = set()
     exclude_fields = set()
@@ -21,9 +33,10 @@ def process_fields(request, model, obj):
         perm = permission.perm
         try:
             have_perm = obj.has_smooth_permission(request, perm)
-        except Exception as e:
+        except KeyError:
             raise PermissionNotFoundException("can_{}_permission not found" . format(perm))
-
+        except Exception as e:
+            raise e
         for field in literal_eval(permission.fields):
             if have_perm:
                 allow_fields.add(field)
@@ -42,8 +55,6 @@ class SmoothPermAdmin(admin.ModelAdmin):
     """
     Class for model admin of object with permission, need at least one attr
     :param inline_perm_model: the model inline for permission
-    :param smooth_perm_field: all field considered like advanced_settings on the model,
-    they will be read_only if user has not permission
     """
     exclude_from_parent = ()
     fieldsets_from_parent = []
@@ -54,6 +65,9 @@ class SmoothPermAdmin(admin.ModelAdmin):
         raise NotImplementedError(_("inline_perm_model need to be initialized"))
 
     def __init__(self, *arg, **kwargs):
+        """
+        Save all exclude, fields & fieldsets given by code
+        """
         if self.exclude is not None:
             self.exclude_from_parent = tuple(self.exclude)
 
@@ -100,8 +114,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
     def remove_exclude_from_fieldsets(self, exclude, fieldsets):
         """
         Remove all exclude list in fieldsets
-        :param exclude: The exlude list
-        :return:
+        :param exclude: The list of fields to exclude
+        :return: the fieldsets without fields given
         """
 
         if fieldsets is not None:
@@ -137,9 +151,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """
-        Override readonly_fields. If user can only view page, all fields are readonly,
-        if user hasn't advanced_settings perm, all :param:smooth_perm_field are readonly
-        if user has all perms / superuser all readonly are readonly from modelAdmin
+        Generate fields or fieldsets, exludes and readonly fields using all permissions create.
+        All permission are generate in admin by SmoothRegistryModel
         """
 
         readonly_fields = set()
@@ -180,7 +193,7 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_inline_classes(self, request, obj=None):
         """
-        Return inlines classes with inline perms if user has change permissions perm
+        Get all inlines class, and add the inline_perm_model if user has can_change_permission.
         :param request: request HTTP
         :param obj: obj in question
         :return: [inlines] list of inlines models
@@ -195,7 +208,7 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_inline_instances(self, request, obj=None):
         """
-        Standard get_inline_instance, just update inlines, see:get_inline_classes
+        Standard get_inline_instance, just update inlines, ..seealso:: get_inline_classes
         """
         self.inlines = self.get_inline_classes(request, obj)
         return super(SmoothPermAdmin, self).get_inline_instances(request, obj)
@@ -220,10 +233,17 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
 
 class SmoothPermInlineModelAdmin(InlineModelAdmin):
+    """
+    Class for inline model admin of object with permission, need at least one attr
+    :param inline_perm_model: the model inline for permission
+    """
     exclude_from_parent = ()
     fields_from_parent = []
 
     def __init__(self, *args, **kwargs):
+        """
+        Save all exclude, fields given
+        """
         if self.exclude is not None:
             self.exclude_from_parent = tuple(self.exclude)
 
@@ -235,13 +255,13 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
         super(SmoothPermInlineModelAdmin, self).__init__(*args, **kwargs)
 
     def get_formset(self, request, obj=None, **kwargs):
+        """
+        Generate readonly and exclude fields just before get the formset
+        """
         self.exclude = deepcopy(self.exclude_from_parent)
         self.get_readonly_fields(request, obj)
 
         return super(SmoothPermInlineModelAdmin, self).get_formset(request, obj, **kwargs)
-
-    def has_add_permission(self, request):
-        return super(SmoothPermInlineModelAdmin, self).has_add_permission(request)
 
     def get_readonly_fields(self, request, obj=None):
         """

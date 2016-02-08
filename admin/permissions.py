@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+..module:admin.permissions
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: modules definitions for inline perm admin, for permission model, created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+"""
 from django.contrib.admin.options import InlineModelAdmin
 
 

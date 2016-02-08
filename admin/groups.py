@@ -1,15 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+..module:admin.groups
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: module for smooth group definition in admin, created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+"""
 from django.forms.utils import ErrorList
 from django import forms
 from django.contrib import admin
 
 from smooth_perms.utils.permissions import get_current_user
-from smooth_perms.utils.register import smooth_registry
+from smooth_perms.utils.registry import smooth_registry
 from smooth_perms.models import SmoothGroup
 
 
 class SmoothGroupForm(forms.ModelForm):
     """
-    Generic form for User & Group permissions in cms
+    Generic form for SmoothGroup permissions in admin
     """
 
     def __init__(self, data=None, files=None, auto_id='id_{}', prefix=None,
@@ -24,6 +33,9 @@ class SmoothGroupForm(forms.ModelForm):
         self.fields.update(smooth_registry.get_fields_form())
 
     def populate_initials(self, obj):
+        """
+        Get initials from registry
+        """
         return smooth_registry.get_initials(obj)
 
     def save(self, commit=True):
@@ -36,6 +48,10 @@ class SmoothGroupForm(forms.ModelForm):
 
 
 class SmoothGroupAdmin(admin.ModelAdmin):
+    """
+    Generic Admin definition for SmoothGroup model
+    """
+
     fieldsets = [
         (None, {'fields': ('name',)}),
     ]
@@ -47,6 +63,9 @@ class SmoothGroupAdmin(admin.ModelAdmin):
         super(SmoothGroupAdmin, self).__init__(*args, **kwargs)
 
     def get_fieldsets(self, request, obj=None):
+        """
+        Get dynamically fieldsets with all model register in smooth_registry
+        """
         # The function is called one time before form is created
         # So we add a token in request in first call, next
         # we can call dynamic fields (form is created)

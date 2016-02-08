@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+..module:signals.groups
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: Module for group model signals , created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+
+"""
 from smooth_perms.models import SmoothGroup
 
 

@@ -1,15 +1,25 @@
+# -*- coding: utf-8 -*-
+"""
+..module:models.registry
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: Module for registry models, created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+
+"""
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from smooth_perms.validators import validate_tab
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 from django.db.models.fields.related import ForeignKey
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 class SmoothRegistryModel(models.Model):
+    """
+    Model definition for each model who is register in smooth_registry
+    """
     name = models.CharField(max_length=100)
     content_type = models.ForeignKey(ContentType)
 
@@ -46,6 +56,9 @@ class SmoothRegistryModel(models.Model):
 
 
 class PermissionAdminMixin(models.Model):
+    """
+    Model definition for define exclude/readonly fields for each perm
+    """
     smooth_registry = models.ForeignKey(SmoothRegistryModel, related_name="registry")
 
     perm = models.CharField(max_length=1000)

@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-..module:registry
-    :project: 
+..module:forms.registry
+    :project: smooth_perms
     :platform: Unix
-    :synopsis: Module for core database specification, created on 05/02/2016 
+    :synopsis: Module for registry forms, created on 05/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
 """
 from django import forms
 from smooth_perms.forms.fields import MultipleChoiceFieldFields
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 class PermissionAdminMixinInlineForm(forms.ModelForm):

@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Take from django_cms
+..module:utils.permissions
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: Utils for set/get current user without using request, created on 04/02/2016. Take from django_cms
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+
 """
 from threading import local
 
