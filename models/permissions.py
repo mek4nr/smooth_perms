@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+..module:models.permissions
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: Module for permissions models, created on 04/02/2016
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+
+"""
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth.models import Group
@@ -17,6 +27,9 @@ BASE_PERMISSIONS = (
 
 
 class ModelPermission(models.Model):
+    """
+    Abstract model. A model need to inheritance this model for add permissions specification
+    """
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -37,6 +50,12 @@ class ModelPermission(models.Model):
         raise NotImplementedError
 
     def has_smooth_permission(self, request, permission_type):
+        """
+        Get the permission and his return
+        :param request: request HTTP
+        :param permission_type: name of perm
+        :return: True or False
+        """
         if hasattr(self, "has_{}_permission" . format(permission_type)):
             return getattr(self, "has_{}_permission" . format(permission_type))(request)
         return getattr(self, "has_generic_permission" . format(permission_type))(request, permission_type)

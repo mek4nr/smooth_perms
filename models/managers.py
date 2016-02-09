@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-..module:managers
-    :project: 
+..module:models.managers
+    :project: smooth_perms
     :platform: Unix
-    :synopsis: Module for core database specification, created on 28/03/2015 
+    :synopsis: Module for models managers, created on 28/03/2015
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
@@ -20,8 +20,8 @@ class GlobalPermissionManager(models.Manager):
     """
     Class for  permissions management
 
-    :param foreign_key : The foreign key from the permission model
-    :type str.
+    :param foreign_key: The foreign key from the permission model
+    :type str.:
     """
     @property
     def foreign_key(self):

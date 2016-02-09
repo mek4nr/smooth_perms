@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-..module:fields
-    :project: 
+..module:forms.fields
+    :project: smooth_perms
     :platform: Unix
-    :synopsis: Module for core database specification, created on 05/02/2016 
+    :synopsis: Module for custom fields, created on 05/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 

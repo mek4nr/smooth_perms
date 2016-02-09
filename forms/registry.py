@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-..module:registry
-    :project: 
+..module:forms.registry
+    :project: smooth_perms
     :platform: Unix
-    :synopsis: Module for core database specification, created on 05/02/2016 
+    :synopsis: Module for registry forms, created on 05/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
 """
 from django import forms
 from smooth_perms.forms.fields import MultipleChoiceFieldFields
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 class PermissionAdminMixinInlineForm(forms.ModelForm):
@@ -20,7 +17,7 @@ class PermissionAdminMixinInlineForm(forms.ModelForm):
         super(PermissionAdminMixinInlineForm, self).__init__(*args, **kwargs)
         choices = None
         if self.instance.pk is not None and choices is None:
-            choices = self.instance.smooth_registry.get_fields_from_content_type()
+            choices = self.instance.smooth_registry.get_choices_from_fields()
 
             self.fields['fields'] = MultipleChoiceFieldFields(
                 choices=choices,

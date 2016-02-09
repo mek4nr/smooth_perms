@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+..module:signals.registry
+    :project: smooth_perms
+    :platform: Unix
+    :synopsis: Utils for set/get current user without using request, created on 04/02/2016. Take from django_cms
+
+..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
+
+"""
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_permission_codename
@@ -8,23 +18,34 @@ from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django import forms
 from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 def get_registry(model):
+    """
+    Get registry from database with model
+    """
     return SmoothRegistryModel.objects.get(content_type=ContentType.objects.get_for_model(model))
 
 
 def get_registry_perms(model):
+    """
+    Get all permission mixin from model
+    """
     return get_registry(model).registry.all()
 
 
+
 class SmoothPermRegister(object):
+    """
+    Class definition for register all model with permission, generated fieldsets for smooth_group
+    get initial data in this fieldsets
+    """
     registry = []
 
     def get_codename(self, model, perm):
+        """
+        Return codename permission using model & name of perm (add, delete, change)
+        """
         return get_permission_codename(perm, model._meta)
 
     def get_fields_form(self, fields=None):
@@ -58,7 +79,9 @@ class SmoothPermRegister(object):
         return initials
 
     def save_permissions(self, data, obj):
-
+        """
+        Save permission from data
+        """
         if not obj.pk:
             # save obj, otherwise we can't assign permissions to him
             obj.save()
@@ -75,6 +98,9 @@ class SmoothPermRegister(object):
                     permission_acessor.remove(permission)
 
     def register(self, model, text=None):
+        """
+        Add a model in registry
+        """
         if not isinstance(model, ModelBase):
             raise ImproperlyConfigured('This object {} is not a ModelBase class' . format(model.__name__))
 
@@ -92,6 +118,8 @@ class SmoothPermRegister(object):
             )
 
             for perm in BASE_PERMISSIONS:
+                if perm == "view":
+                    continue
                 PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
             for perm in model.permissions.PERMISSIONS:
                 PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
@@ -101,6 +129,9 @@ class SmoothPermRegister(object):
         self.registry.append((model, _(text)))
 
     def unregister(self, model):
+        """
+        Remove model from registry
+        """
         for i, perm_model in enumerate(self.registry):
             _model, _text = perm_model
             if model == _model:

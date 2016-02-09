@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-..module:widgets
-    :project: 
+..module:forms.widgets
+    :project: smooth_perms
     :platform: Unix
-    :synopsis: Module for core database specification, created on 05/02/2016 
+    :synopsis: Module for custom widgets definition, created on 05/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
 """
 from django import forms
 from ast import literal_eval
-import logging
-
-LOG = logging.getLogger("LOG")
 
 
 class SelectMultipleChosen(forms.SelectMultiple):
+    """
+    Widget using chosen.js
+    """
     class Media:
         css = {
             'all': ('smooth_perms/css/chosen.min.css', 'smooth_perms/css/module_overflow.css', 'smooth_perms/css/django-cms-patch.css')
