@@ -34,6 +34,7 @@ def get_registry_perms(model):
     return get_registry(model).registry.all()
 
 
+
 class SmoothPermRegister(object):
     """
     Class definition for register all model with permission, generated fieldsets for smooth_group
@@ -117,6 +118,8 @@ class SmoothPermRegister(object):
             )
 
             for perm in BASE_PERMISSIONS:
+                if perm == "view":
+                    continue
                 PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
             for perm in model.permissions.PERMISSIONS:
                 PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])

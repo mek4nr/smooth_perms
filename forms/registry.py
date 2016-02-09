@@ -17,7 +17,7 @@ class PermissionAdminMixinInlineForm(forms.ModelForm):
         super(PermissionAdminMixinInlineForm, self).__init__(*args, **kwargs)
         choices = None
         if self.instance.pk is not None and choices is None:
-            choices = self.instance.smooth_registry.get_fields_from_content_type()
+            choices = self.instance.smooth_registry.get_choices_from_fields()
 
             self.fields['fields'] = MultipleChoiceFieldFields(
                 choices=choices,
