@@ -16,9 +16,10 @@ from django.db.models.base import ModelBase
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
+from django.db.utils import OperationalError
 from django import forms
-from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin
-
+from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin, ModelPermission
+import warnings
 
 def get_registry(model):
     """
@@ -121,10 +122,17 @@ class SmoothPermRegister(object):
                 if perm == "view":
                     continue
                 PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
-            for perm in model.permissions.PERMISSIONS:
-                PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
-        except Exception:
-            pass
+            if hasattr(model, 'permissions') and hasattr(model.permissions, 'PERMISSIONS'):
+                for perm in model.permissions.PERMISSIONS:
+                    PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+        except OperationalError:
+            warnings.warn(
+                "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
+                "Run 'python manage.py migrate' to apply them.",
+                OperationalError, stacklevel=2
+            )
+        except Exception as e:
+            raise e
 
         self.registry.append((model, _(text)))
 
