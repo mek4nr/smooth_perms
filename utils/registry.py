@@ -125,6 +125,11 @@ class SmoothPermRegister(object):
             if hasattr(model, 'permissions') and hasattr(model.permissions, 'PERMISSIONS'):
                 for perm in model.permissions.PERMISSIONS:
                     PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+
+                for perm in PermissionAdminMixin.objects.filter(smooth_registry=registry_model[0]):
+                    if perm.perm not in model.permissions.PERMISSIONS:
+                        perm.delete()
+
         except OperationalError:
             warnings.warn(
                 "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
