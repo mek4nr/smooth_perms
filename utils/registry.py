@@ -113,7 +113,7 @@ class SmoothPermRegister(object):
             text = _(u'{} permissions') .format(model.__name__)
 
         try:
-            registry_model = SmoothRegistryModel.objects.get_or_create(
+            registry_model = SmoothRegistryModel.objects.register(
                 name="{} registry" . format(model.__name__),
                 content_type=ContentType.objects.get_for_model(model)
             )
@@ -129,7 +129,7 @@ class SmoothPermRegister(object):
             warnings.warn(
                 "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
                 "Run 'python manage.py migrate' to apply them.",
-                OperationalError, stacklevel=2
+                Warning, stacklevel=2
             )
         except Exception as e:
             raise e
@@ -143,9 +143,9 @@ class SmoothPermRegister(object):
         for i, perm_model in enumerate(self.registry):
             _model, _text = perm_model
             if model == _model:
-                SmoothRegistryModel.objects.get(
+                SmoothRegistryModel.objects.unregister(
                     content_type=ContentType.objects.get_for_model(model)
-                ).delete()
+                )
                 self.registry.remove(i)
                 return True
         raise NotRegistered('The model {} is not registered' . format(model.__name__))
