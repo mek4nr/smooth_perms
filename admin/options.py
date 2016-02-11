@@ -86,9 +86,10 @@ class SmoothPermAdmin(admin.ModelAdmin):
         super(SmoothPermAdmin, self).__init__(*arg, **kwargs)
 
     def get_fields(self, request, obj=None):
-        if self.fields:
-            return self.fields
-        return get_fields_name(self.model)
+        if self.fields is None:
+            return get_fields_name(self.model, True)
+
+        return self.fields
 
     def save_model(self, request, obj, form, change):
         """
@@ -270,9 +271,10 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
             self.fields_from_parent = get_fields_name(self.model, True)
 
     def get_fields(self, request, obj=None):
-        if self.fields:
-            return self.fields
-        return get_fields_name(self.model, True)
+        if self.fields is None:
+            return get_fields_name(self.model, True)
+
+        return self.fields
 
     def get_formset(self, request, obj=None, **kwargs):
         """
@@ -281,10 +283,12 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
         self.exclude = deepcopy(self.exclude_from_parent)
         self.fields = deepcopy(self.fields_from_parent)
         self.get_readonly_fields(request, obj)
+
         # For avoid KeyError we remove from fields all exclude
         self.fields = list(set(self.fields) - set(self.exclude))
+        formset = super(SmoothPermInlineModelAdmin, self).get_formset(request, obj, fields=self.fields, **kwargs)
 
-        return super(SmoothPermInlineModelAdmin, self).get_formset(request, obj, **kwargs)
+        return formset
 
     def get_readonly_fields(self, request, obj=None):
         """
