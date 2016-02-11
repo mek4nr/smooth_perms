@@ -34,12 +34,40 @@ def get_fields_from_obj(model, is_inline=False):
     return fields
 
 
+class SmoothRegistryQuerySet(models.QuerySet):
+    def unregister(self, *arg, **kwargs):
+        obj = self.get(*arg, **kwargs)
+        obj.is_register = False
+        return obj.save()
+
+    def register(self, *arg, **kwargs):
+        get = self.get_or_create(*arg, **kwargs)
+        obj = get[0]
+        obj.is_register = True
+        obj.save()
+        return get
+
+
+class SmoothRegistryManager(models.Manager):
+    def unregister(self, *arg, **kwargs):
+        return self.get_queryset().unregister(*arg, **kwargs)
+
+    def register(self, *arg, **kwargs):
+        return self.get_queryset().register(*arg, **kwargs)
+
+    def get_queryset(self):
+        return SmoothRegistryQuerySet(self.model, using=self._db)
+
+
 class SmoothRegistryModel(models.Model):
     """
     Model definition for each model who is register in smooth_registry
     """
     name = models.CharField(max_length=100)
     content_type = models.ForeignKey(ContentType)
+    is_register = models.BooleanField(default=True)
+
+    objects = SmoothRegistryManager()
 
     def __str__(self):
         return "{}" . format(self.name)
