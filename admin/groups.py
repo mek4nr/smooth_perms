@@ -28,11 +28,21 @@ class SmoothGroupForm(forms.ModelForm):
         if instance:
             initial = initial or {}
             initial.update(self.populate_initials(instance))
-        super(SmoothGroupForm, self).__init__(data, files, auto_id, prefix,
-                                              initial, error_class, label_suffix, empty_permitted, instance)
+        super(SmoothGroupForm, self).__init__(
+            data,
+            files,
+            auto_id,
+            prefix,
+            initial,
+            error_class,
+            label_suffix,
+            empty_permitted,
+            instance
+        )
         self.fields.update(smooth_registry.get_fields_form())
 
-    def populate_initials(self, obj):
+    @staticmethod
+    def populate_initials(obj):
         """
         Get initials from registry
         """

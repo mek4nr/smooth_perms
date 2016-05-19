@@ -3,7 +3,8 @@
 ..module:admin.permissions
     :project: smooth_perms
     :platform: Unix
-    :synopsis: modules definitions for inline perm admin, for permission model, created on 04/02/2016
+    :synopsis: modules definitions for inline perm admin,
+    for permission model, created on 04/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 """
@@ -14,7 +15,16 @@ class SmoothPermInlineAdmin(InlineModelAdmin):
     """
     Class form inline permission
     """
-    fields = ['user', 'group', 'can_view', 'can_change', 'can_advanced_settings', 'can_delete', 'can_change_permissions', 'can_delete_permissions']
+    fields = [
+        'user',
+        'group',
+        'can_view',
+        'can_change',
+        'can_advanced_settings',
+        'can_delete',
+        'can_change_permissions',
+        'can_delete_permissions'
+    ]
     extra = 0
 
     def has_change_permission(self, request, obj=None):
@@ -50,13 +60,24 @@ class SmoothPermInlineAdmin(InlineModelAdmin):
 
             self.can_delete = obj.has_delete_permissions_permission(request)
 
-        formset_cls = super(SmoothPermInlineAdmin, self).get_formset(request, obj=None, exclude=exclude, **kwargs)
+        formset_cls = super(SmoothPermInlineAdmin, self).get_formset(
+            request,
+            obj=None,
+            exclude=exclude,
+            **kwargs
+        )
         return formset_cls
 
 
 class SmoothPermInlineTabularAdmin(SmoothPermInlineAdmin):
+    """
+    Class for SmoothPerm Stacked Inline
+    """
     template = 'admin/edit_inline/tabular.html'
 
 
 class SmoothPermInlineStackedAdmin(SmoothPermInlineAdmin):
+    """
+    Class for SmoothPerm Tabular Inline
+    """
     template = 'admin/edit_inline/stacked.html'

@@ -18,6 +18,12 @@ import logging
 LOG = logging.getLogger("LOG")
 
 def get_fields_from_obj(model, is_inline=False):
+    """
+    Get all fields from model given
+    :param model:
+    :param is_inline: For remove Foreign Key
+    :return: all Fields
+    """
     opts = model._meta
     fields_init = list(
         [field for field in opts.local_fields] +
@@ -35,12 +41,22 @@ def get_fields_from_obj(model, is_inline=False):
 
 
 class SmoothRegistryQuerySet(models.QuerySet):
+    """
+    Model Queryset for SmoothRegistry
+    """
+
     def unregister(self, *arg, **kwargs):
+        """
+        Set is_register to false
+        """
         obj = self.get(*arg, **kwargs)
         obj.is_register = False
         return obj.save()
 
     def register(self, *arg, **kwargs):
+        """
+        Set is_register to true or create obj if not exist
+        """
         get = self.get_or_create(*arg, **kwargs)
         obj = get[0]
         obj.is_register = True
@@ -49,13 +65,26 @@ class SmoothRegistryQuerySet(models.QuerySet):
 
 
 class SmoothRegistryManager(models.Manager):
+    """
+    Model Manager for SmoothRegistry
+    """
+
     def unregister(self, *arg, **kwargs):
+        """
+        Call unregister function in queryset
+        """
         return self.get_queryset().unregister(*arg, **kwargs)
 
     def register(self, *arg, **kwargs):
+        """
+        Call register function in queryset
+        """
         return self.get_queryset().register(*arg, **kwargs)
 
     def get_queryset(self):
+        """
+        Return the queryset of SmoothRegistry
+        """
         return SmoothRegistryQuerySet(self.model, using=self._db)
 
 

@@ -8,18 +8,18 @@
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
 """
+import warnings
+from copy import deepcopy
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_permission_codename
-from copy import deepcopy
 from django.db.models.base import ModelBase
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.utils.translation import ugettext as _
 from django.db.utils import OperationalError
 from django import forms
-from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin, ModelPermission
-import warnings
+from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin
 
 def get_registry(model):
     """
@@ -35,13 +35,24 @@ def get_registry_perms(model):
     return get_registry(model).registry.all()
 
 
-
 class SmoothPermRegister(object):
     """
     Class definition for register all model with permission, generated fieldsets for smooth_group
     get initial data in this fieldsets
     """
     registry = []
+
+    def __init__(self):
+        try:
+            for srm in SmoothRegistryModel.objects.all():
+                SmoothRegistryModel.objects.unregister(content_type=srm.content_type)
+
+        except Exception as e:
+            warnings.warn(
+                "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
+                "Run 'python manage.py migrate' to apply them.",
+                Warning, stacklevel=2
+            )
 
     def get_codename(self, model, perm):
         """
@@ -98,9 +109,13 @@ class SmoothPermRegister(object):
                 else:
                     permission_acessor.remove(permission)
 
-    def register(self, model, text=None):
+    def register(self, model, text=None, registry=True):
         """
-        Add a model in registry
+        Add a model to smooth registry
+        :param model: Model to add
+        :param text: Text to show
+        :param registry: If you want add to registry model (if model use smooth_permission)
+        :return:
         """
         if not isinstance(model, ModelBase):
             raise ImproperlyConfigured('This object {} is not a ModelBase class' . format(model.__name__))
@@ -109,35 +124,46 @@ class SmoothPermRegister(object):
             if m == model:
                 raise AlreadyRegistered('The model {} is already registered' . format(model.__name__))
 
-        if text is None:
+        if text is None or text == "":
             text = _(u'{} permissions') .format(model.__name__)
 
-        try:
-            registry_model = SmoothRegistryModel.objects.register(
-                name="{} registry" . format(model.__name__),
-                content_type=ContentType.objects.get_for_model(model)
-            )
+        if registry:
+            try:
+                registry_model = SmoothRegistryModel.objects.register(
+                    name="{} registry" . format(model.__name__),
+                    content_type=ContentType.objects.get_for_model(model)
+                )
 
-            for perm in BASE_PERMISSIONS:
-                if perm == "view":
-                    continue
-                PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
-            if hasattr(model, 'permissions') and hasattr(model.permissions, 'PERMISSIONS'):
-                for perm in model.permissions.PERMISSIONS:
+                for perm in BASE_PERMISSIONS:
+                    if perm == "view":
+                        continue
                     PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+                if hasattr(model, 'permissions') and hasattr(model.permissions, 'PERMISSIONS'):
+                    for perm in model.permissions.PERMISSIONS:
+                        PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
 
-                for perm in PermissionAdminMixin.objects.filter(smooth_registry=registry_model[0]):
-                    if perm.perm not in model.permissions.PERMISSIONS:
-                        perm.delete()
+                    for perm in PermissionAdminMixin.objects.filter(smooth_registry=registry_model[0]):
+                        if perm.perm not in model.permissions.PERMISSIONS:
+                            perm.delete()
 
-        except OperationalError:
-            warnings.warn(
-                "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
-                "Run 'python manage.py migrate' to apply them.",
-                Warning, stacklevel=2
-            )
-        except Exception as e:
-            raise e
+            except OperationalError:
+                warnings.warn(
+                    "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
+                    "Run 'python manage.py migrate' to apply them.",
+                    Warning, stacklevel=2
+                )
+            except RuntimeError:
+                warnings.warn(
+                    "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
+                    "Run 'python manage.py migrate' to apply them.",
+                    Warning, stacklevel=2
+                )
+            except Exception as e:
+                warnings.warn(
+                    "Smooth perms has unapplied migrations; your app may not work properly until they are applied."
+                    "Run 'python manage.py migrate' to apply them.",
+                    Warning, stacklevel=2
+                )
 
         self.registry.append((model, _(text)))
 

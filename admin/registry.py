@@ -42,9 +42,14 @@ class SmoothRegistryAdmin(admin.ModelAdmin):
     Admin for smooth registry model
     """
     readonly_fields = ["name", "content_type"]
+    fields = readonly_fields
 
     inlines = [PermissionAdminMixinInline]
     model = SmoothRegistryModel
+
+    def get_queryset(self, request):
+        qs = super(SmoothRegistryAdmin, self).get_queryset(request)
+        return qs.filter(is_register=True)
 
     def has_add_permission(self, request):
         """
@@ -58,4 +63,4 @@ class SmoothRegistryAdmin(admin.ModelAdmin):
         They are generated automatically, so don't need to be destroy
         :return: False
         """
-        return False
+        return True

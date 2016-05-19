@@ -13,6 +13,10 @@ from smooth_perms.forms.fields import MultipleChoiceFieldFields
 
 
 class PermissionAdminMixinInlineForm(forms.ModelForm):
+    """
+    Form for smooth registry in admin
+    """
+
     def __init__(self, *args, **kwargs):
         super(PermissionAdminMixinInlineForm, self).__init__(*args, **kwargs)
         choices = None

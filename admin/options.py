@@ -3,22 +3,25 @@
 ..module:admin.options
     :project: smooth_perms
     :platform: Unix
-    :synopsis: module for all definition for model using smooth_perms. Defintion for Inline and ModelAdmin,
+    :synopsis: module for all definition for model using smooth_perms.
+    Defintion for Inline and ModelAdmin,
     created on 04/02/2016
 
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 """
+import logging
+from copy import deepcopy
+from ast import literal_eval
 from django.contrib import admin
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.admin.options import InlineModelAdmin
-from copy import deepcopy
+from django.utils.translation import ugettext_lazy as _
 from smooth_perms.models import PermissionNotFoundException, get_fields_from_obj
 from smooth_perms.utils.registry import get_registry_perms
-from django.utils.translation import ugettext_lazy as _
-from ast import literal_eval
-import logging
+
 
 LOG = logging.getLogger("LOG")
+
 
 def process_fields(request, model, obj):
     """
@@ -52,11 +55,19 @@ def process_fields(request, model, obj):
 
     return allow_fields, readonly_fields, exclude_fields
 
+
 def get_fields_name(model, is_inline=False):
+    """
+    Get fields with model given, if :param is_inline is true we remove the foreign_key
+    :param model:
+    :param is_inline:
+    :return:
+    """
     fields = []
     for field in get_fields_from_obj(model, is_inline):
         fields += [field.name]
     return fields
+
 
 class SmoothPermAdmin(admin.ModelAdmin):
     """
@@ -101,7 +112,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         """
-        Standard change permission, return True if user has change and/or view perm if we are on object
+        Standard change permission, return True if user
+        has change and/or view perm if we are on object
         else return classic perm with codename
         """
         if obj is not None:
@@ -110,20 +122,23 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """
-        Standard add permission, return True if user has basic had permission
+        Standard add permission, return True if user
+        has basic had permission
         """
         return super(SmoothPermAdmin, self).has_add_permission(request)
 
     def has_delete_permission(self, request, obj=None):
         """
-        Standard delete permission, return True if user has delete perm if we are on object
+        Standard delete permission, return True if user
+        has delete perm if we are on object
         else return classic perm with codename
         """
         if obj is not None:
             return obj.has_delete_permission(request)
         return super(SmoothPermAdmin, self).has_delete_permission(request, obj)
 
-    def remove_exclude_from_fieldsets(self, exclude, fieldsets):
+    @staticmethod
+    def remove_exclude_from_fieldsets(exclude, fieldsets):
         """
         Remove all exclude list in fieldsets
         :param exclude: The list of fields to exclude
@@ -151,8 +166,9 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """
-        Returns a QuerySet of all model instances that can be edited by the
-        admin site. This is used by changelist_view.
+        Returns a QuerySet of all model instances that
+        can be edited by the admin site.
+        This is used by changelist_view.
         """
         qs = super(SmoothPermAdmin, self).get_queryset(request)
         my_list = list(qs)
@@ -163,7 +179,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """
-        Generate fields or fieldsets, exludes and readonly fields using all permissions create.
+        Generate fields or fieldsets, exludes and readonly
+        fields using all permissions create.
         All permission are generate in admin by SmoothRegistryModel
         """
 
@@ -205,7 +222,10 @@ class SmoothPermAdmin(admin.ModelAdmin):
                     self.fields = list(set(self.fields_from_parent) - exclude_fields)
             else:
                 if len(self.exclude) > 0:
-                    self.fieldsets = self.remove_exclude_from_fieldsets(self.exclude, self.fieldsets_from_parent)
+                    self.fieldsets = self.remove_exclude_from_fieldsets(
+                        self.exclude,
+                        self.fieldsets_from_parent
+                    )
                 else:
                     self.fieldsets = list(self.fieldsets_from_parent)
 
@@ -213,7 +233,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
     def get_inline_classes(self, request, obj=None):
         """
-        Get all inlines class, and add the inline_perm_model if user has can_change_permission.
+        Get all inlines class, and add the inline_perm_model
+        if user has can_change_permission.
         :param request: request HTTP
         :param obj: obj in question
         :return: [inlines] list of inlines models
@@ -223,12 +244,13 @@ class SmoothPermAdmin(admin.ModelAdmin):
             inlines.add(self.inline_perm_model)
             if not obj.has_change_permissions_permission(request):
                 inlines.remove(self.inline_perm_model)
-
+        LOG.debug(inlines)
         return list(inlines)
 
     def get_inline_instances(self, request, obj=None):
         """
-        Standard get_inline_instance, just update inlines, ..seealso:: get_inline_classes
+        Standard get_inline_instance, just update
+        inlines, ..seealso:: get_inline_classes
         """
         self.inlines = self.get_inline_classes(request, obj)
         return super(SmoothPermAdmin, self).get_inline_instances(request, obj)
@@ -242,7 +264,7 @@ class SmoothPermAdmin(admin.ModelAdmin):
         self.exclude = deepcopy(self.exclude_from_parent)
         self.get_readonly_fields(request, obj)
         # For avoid KeyError we remove from fields all exclude
-        self.fields = list(set(self.fields) - set(self.exclude))
+        self.fields = list(set(self.get_fields(request)) - set(self.exclude))
         self.get_fieldsets(request, obj)
 
         return super(SmoothPermAdmin, self).get_form(request, obj, **kwargs)
@@ -250,7 +272,8 @@ class SmoothPermAdmin(admin.ModelAdmin):
 
 class SmoothPermInlineModelAdmin(InlineModelAdmin):
     """
-    Class for inline model admin of object with permission, need at least one attr
+    Class for inline model admin of object with permission,
+    need at least one attr
     :param inline_perm_model: the model inline for permission
     """
     exclude_from_parent = ()
@@ -271,6 +294,9 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
             self.fields_from_parent = get_fields_name(self.model, True)
 
     def get_fields(self, request, obj=None):
+        """
+        Get fields, if it's none get fields from model name
+        """
         if self.fields is None:
             return get_fields_name(self.model, True)
 
@@ -286,7 +312,11 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
 
         # For avoid KeyError we remove from fields all exclude
         self.fields = list(set(self.fields) - set(self.exclude))
-        formset = super(SmoothPermInlineModelAdmin, self).get_formset(request, obj, fields=self.fields, **kwargs)
+        formset = super(SmoothPermInlineModelAdmin, self).get_formset(
+            request,
+            obj,
+            fields=self.fields, **kwargs
+        )
 
         return formset
 
@@ -320,8 +350,14 @@ class SmoothPermInlineModelAdmin(InlineModelAdmin):
 
 
 class SmoothPermStackedInline(SmoothPermInlineModelAdmin):
+    """
+    Class for Stacked Inline
+    """
     template = 'admin/smooth_perms/edit_inline/stacked.html'
 
 
 class SmoothPermTabularInline(SmoothPermInlineModelAdmin):
+    """
+    Class for Tabular Inline
+    """
     template = 'admin/smooth_perms/edit_inline/tabular.html'
