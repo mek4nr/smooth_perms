@@ -216,7 +216,6 @@ class SmoothPermAdmin(admin.ModelAdmin):
                     self.fields_from_parent = list(
                         get_fields_name(self.model)
                     )
-                    print self.fields_from_parent
 
                 if len(self.exclude) > 0:
                     self.fields = list(set(self.fields_from_parent) - exclude_fields)

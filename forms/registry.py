@@ -8,8 +8,10 @@
 ..moduleauthor:: Jean-Baptiste Munieres <jbaptiste.munieres@gmail.com>
 
 """
+import logging
 from django import forms
 from smooth_perms.forms.fields import MultipleChoiceFieldFields
+LOG = logging.getLogger("LOG")
 
 
 class PermissionAdminMixinInlineForm(forms.ModelForm):
@@ -22,7 +24,6 @@ class PermissionAdminMixinInlineForm(forms.ModelForm):
         choices = None
         if self.instance.pk is not None and choices is None:
             choices = self.instance.smooth_registry.get_choices_from_fields()
-
             self.fields['fields'] = MultipleChoiceFieldFields(
                 choices=choices,
                 required=False,

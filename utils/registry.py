@@ -9,6 +9,7 @@
 
 """
 import warnings
+import logging
 from copy import deepcopy
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -20,6 +21,9 @@ from django.utils.translation import ugettext as _
 from django.db.utils import OperationalError
 from django import forms
 from smooth_perms.models import SmoothRegistryModel, BASE_PERMISSIONS, PermissionAdminMixin
+
+LOG = logging.getLogger("LOG")
+
 
 def get_registry(model):
     """
@@ -133,17 +137,21 @@ class SmoothPermRegister(object):
                     name="{} registry" . format(model.__name__),
                     content_type=ContentType.objects.get_for_model(model)
                 )
-
                 for perm in BASE_PERMISSIONS:
                     if perm == "view":
                         continue
                     PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
+
                 if hasattr(model, 'permissions') and hasattr(model.permissions, 'PERMISSIONS'):
-                    for perm in model.permissions.PERMISSIONS:
+                    for perm in model.permissions.get_permission():
+                        if perm == "view":
+                            continue
                         PermissionAdminMixin.objects.get_or_create(perm=perm, smooth_registry=registry_model[0])
 
                     for perm in PermissionAdminMixin.objects.filter(smooth_registry=registry_model[0]):
-                        if perm.perm not in model.permissions.PERMISSIONS:
+                        if perm == "view":
+                            continue
+                        if perm.perm not in model.permissions.get_permission():
                             perm.delete()
 
             except OperationalError:

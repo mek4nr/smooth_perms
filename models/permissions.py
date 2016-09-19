@@ -159,16 +159,19 @@ class GlobalPermissionMixin(models.Model):
         Create a model with inheritance, add boolean field with this name syntaxe can_%s where %s is the permission
         And add this permission in PERMISSIONS constant for automatically update admin view
     """
-    PERMISSIONS = ()
+    PERMISSIONS = BASE_PERMISSIONS
 
     LOW_LEVEL = 0
     HIGH_LEVEL = 1
 
     smooth_level_perm = LOW_LEVEL
 
+    def get_permission(self):
+        return self.PERMISSIONS + BASE_PERMISSIONS
+
     def __init__(self, *args, **kwargs):
-        self.PERMISSIONS = self.PERMISSIONS + BASE_PERMISSIONS
         super(GlobalPermissionMixin, self).__init__(*args, **kwargs)
+        self.PERMISSIONS = self.PERMISSIONS + BASE_PERMISSIONS
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("user"), blank=True, null=True)
     group = models.ForeignKey(Group, verbose_name=_("group"), blank=True, null=True)

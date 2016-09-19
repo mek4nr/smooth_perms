@@ -17,6 +17,7 @@ import logging
 
 LOG = logging.getLogger("LOG")
 
+
 def get_fields_from_obj(model, is_inline=False):
     """
     Get all fields from model given
@@ -123,7 +124,6 @@ class PermissionAdminMixin(models.Model):
     smooth_registry = models.ForeignKey(SmoothRegistryModel, related_name="registry")
 
     perm = models.CharField(max_length=1000)
-    trolo = models.PositiveIntegerField(default=0)
     fields = models.CharField(
         max_length=1000,
         null=True,

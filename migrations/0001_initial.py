@@ -20,7 +20,6 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('perm', models.CharField(max_length=1000)),
-                ('trolo', models.PositiveIntegerField(default=0)),
                 ('fields', models.CharField(default=b'[]', validators=[smooth_perms.validators.validate_tab], max_length=1000, blank=True, help_text="This fields will be in read-only if user doens't have permission given", null=True)),
                 ('exclude_fields', models.CharField(default=b'[]', validators=[smooth_perms.validators.validate_tab], max_length=1000, blank=True, help_text="This fields will be exclude if user doens't have permission given", null=True)),
             ],
